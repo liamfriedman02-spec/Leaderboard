@@ -1,25 +1,26 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const https = require('https');
 const path = require('path');
 const fs = require('fs');
+const { Client } = require('pg');
+const { execFile } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATA_FILE = path.join(__dirname, 'data.json');
 const INTERVAL_MS = 15 * 60 * 1000;
+const DATABASE_URL = process.env.DATABASE_URL;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ── Load/Save data ─────────────────────────────────────────────────
 function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
   } catch(e) {}
-  return { token: null, affiliateCode: null, affiliateName: null, players: [], totalTurnover: 0, lastSync: null, prizes: DEFAULT_PRIZES, competition: DEFAULT_COMPETITION };
+  return { token: null, authStore: null, web3Auth: 'auth', players: [], totalVolume: 0, lastSync: null, prizes: DEFAULT_PRIZES, competition: DEFAULT_COMPETITION };
 }
 
 function saveData(d) {
@@ -43,155 +44,84 @@ const DEFAULT_COMPETITION = {
 
 let state = loadData();
 let syncTimer = null;
+let isSyncing = false;
 
-// ── Playblock API helper ────────────────────────────────────────────
-function playblockPost(path, token) {
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: 'api.playblock.io',
-      path,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Length': '0',
-        'Accept': 'application/json',
-        'Origin': 'https://sharker.com',
-        'Referer': 'https://sharker.com/',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      }
-    }, (res) => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(d) }); }
-        catch(e) { resolve({ status: res.statusCode, data: null, raw: d }); }
-      });
-    });
-    req.on('error', reject);
-    req.setTimeout(15000, () => { req.destroy(); reject(new Error('Timeout')); });
-    req.end();
-  });
-}
-
-// ── Scrape affiliate data ───────────────────────────────────────────
-async function scrapeAffiliate(token) {
-  const today = new Date().toISOString().split('T')[0];
-  const startDate = state.competition?.startDate || new Date(Date.now()-14*86400000).toISOString().split('T')[0];
-
-  console.log(`[Scraper] Fetching data from ${startDate} to ${today}...`);
-
+// ── DB helper ───────────────────────────────────────────────────────
+async function getFromDB(affiliateId) {
+  if (!DATABASE_URL) return null;
+  const client = new Client({ connectionString: DATABASE_URL });
   try {
-    const result = await playblockPost(
-      `/v2/sap/dashboard/stats/summary?from=${startDate}&to=${today}`,
-      token
+    await client.connect();
+    const players = await client.query(
+      'SELECT * FROM leaderboard WHERE affiliate_id=$1 ORDER BY rank ASC',
+      [affiliateId || 'default']
     );
-
-    if (result.status !== 200 || !result.data?._data) {
-      console.log('[Scraper] Summary API failed:', result.status, result.raw?.substring(0,100));
-      return { success: false, error: `API returned ${result.status}` };
-    }
-
-    const campaigns = result.data._data.campaigns || [];
-    console.log(`[Scraper] Got ${campaigns.length} campaigns`);
-
-    // Aggregate all campaigns
-    let totalTurnover = 0;
-    let totalPlayers = 0;
-    let affiliateCode = null;
-    let affiliateName = null;
-
-    campaigns.forEach(c => {
-      totalTurnover += c.turnover || 0;
-      totalPlayers += c.players || 0;
-      if (!affiliateCode) {
-        affiliateCode = c.code;
-        affiliateName = c.title;
-      }
-    });
-
-    console.log(`[Scraper] Total turnover: G${totalTurnover} | Players: ${totalPlayers}`);
-
-    // Try to get per-player data from network endpoint
-    const networkResult = await playblockPost(
-      `/v2/sap/dashboard/stats/network?from=${startDate}&to=${today}`,
-      token
-    ).catch(() => null);
-
-    let players = [];
-
-    if (networkResult?.status === 200 && networkResult.data?._data) {
-      const networkData = networkResult.data._data;
-      players = (networkData.players || networkData.list || networkData.network || []).map((p, i) => ({
-        rank: i + 1,
-        username: maskWallet(p.wallet || p.address || p.username || `Player${i+1}`),
-        wallet: p.wallet || p.address || '',
-        totalWager: p.turnover || p.volume || p.wager || 0,
-        prize: getPrize(i + 1, state.prizes),
-      })).sort((a, b) => b.totalWager - a.totalWager).map((p, i) => ({ ...p, rank: i+1, prize: getPrize(i+1, state.prizes) }));
-    }
-
-    // If no per-player data, show aggregate as single entry
-    if (players.length === 0 && totalTurnover > 0) {
-      players = [{
-        rank: 1,
-        username: affiliateName || 'Your Players',
-        wallet: '',
-        totalWager: totalTurnover,
-        prize: getPrize(1, state.prizes),
-        isAggregate: true,
-      }];
-    }
-
-    return {
-      success: true,
-      affiliateCode,
-      affiliateName,
-      totalTurnover,
-      totalPlayers,
-      players,
-      scrapedAt: new Date().toISOString(),
-    };
-
-  } catch(err) {
-    console.error('[Scraper] Error:', err.message);
-    return { success: false, error: err.message };
+    const comp = await client.query(
+      'SELECT * FROM competition WHERE affiliate_id=$1',
+      [affiliateId || 'default']
+    );
+    return { players: players.rows, competition: comp.rows[0] };
+  } catch(e) {
+    console.error('[DB] Read error:', e.message);
+    return null;
+  } finally {
+    await client.end();
   }
 }
 
-function maskWallet(w) {
-  if (!w) return 'Player****';
-  const c = w.replace(/\s/g, '');
-  if (c.startsWith('0x') && c.length > 10) return c.slice(0,6) + '****' + c.slice(-4);
-  if (c.length > 8) return c.slice(0,4) + '****' + c.slice(-4);
-  return c.slice(0,3) + '****';
+async function pushToDB(players, state) {
+  if (!DATABASE_URL) return;
+  const client = new Client({ connectionString: DATABASE_URL });
+  try {
+    await client.connect();
+    await client.query(`CREATE TABLE IF NOT EXISTS leaderboard (
+      id SERIAL PRIMARY KEY, affiliate_id TEXT NOT NULL, rank INTEGER,
+      username TEXT, wallet TEXT, total_wager FLOAT, prize TEXT, updated_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await client.query(`CREATE TABLE IF NOT EXISTS competition (
+      affiliate_id TEXT PRIMARY KEY, name TEXT, total_prize TEXT,
+      start_date TEXT, end_date TEXT, last_sync TIMESTAMP, prizes JSONB
+    )`);
+    const affiliateId = state.affiliateCode || 'default';
+    await client.query('DELETE FROM leaderboard WHERE affiliate_id=$1', [affiliateId]);
+    for (const p of players) {
+      await client.query(
+        'INSERT INTO leaderboard (affiliate_id, rank, username, wallet, total_wager, prize) VALUES ($1,$2,$3,$4,$5,$6)',
+        [affiliateId, p.rank, p.username, p.wallet, p.totalWager, p.prize]
+      );
+    }
+    const comp = state.competition || {};
+    await client.query(`
+      INSERT INTO competition (affiliate_id, name, total_prize, start_date, end_date, last_sync, prizes)
+      VALUES ($1,$2,$3,$4,$5,NOW(),$6)
+      ON CONFLICT (affiliate_id) DO UPDATE SET name=$2, total_prize=$3, start_date=$4, end_date=$5, last_sync=NOW(), prizes=$6
+    `, [affiliateId, comp.name, comp.totalPrize, comp.startDate, comp.endDate, JSON.stringify(state.prizes)]);
+    console.log(`[DB] ✓ Pushed ${players.length} players to database`);
+  } catch(e) {
+    console.error('[DB] Push error:', e.message);
+  } finally {
+    await client.end();
+  }
 }
 
-function getPrize(rank, prizes) {
-  const p = (prizes || DEFAULT_PRIZES).find(p => p.rank === rank);
-  return p ? p.prize : '—';
-}
-
-// ── Auto-sync loop ──────────────────────────────────────────────────
+// ── Sync ────────────────────────────────────────────────────────────
 async function runSync() {
   if (!state.token) return;
+  if (isSyncing) return;
+  isSyncing = true;
   console.log('[Server] Running sync...');
-  const result = await scrapeAffiliate(state.token);
-  if (result.success) {
-    state.players = result.players;
-    state.totalTurnover = result.totalTurnover;
-    state.affiliateCode = result.affiliateCode;
-    state.affiliateName = result.affiliateName;
-    state.lastSync = result.scrapedAt;
-    saveData(state);
-    console.log(`[Server] ✓ Synced ${result.players.length} players`);
-  } else {
-    console.error('[Server] Sync failed:', result.error);
-    if (result.error?.includes('401') || result.error?.includes('403')) {
-      console.log('[Server] Token expired — needs refresh');
-      state.tokenExpired = true;
-      saveData(state);
-    }
-  }
+  return new Promise((resolve) => {
+    execFile('node', [path.join(__dirname, 'scraper.js')], async (err, stdout, stderr) => {
+      isSyncing = false;
+      if (err) { console.error('[Server] Scrape failed:', err.message); }
+      else {
+        console.log(stdout);
+        state = loadData();
+        if (state.players?.length > 0) await pushToDB(state.players, state);
+      }
+      resolve();
+    });
+  });
 }
 
 function startSyncLoop() {
@@ -201,81 +131,83 @@ function startSyncLoop() {
 }
 
 // ── Routes ──────────────────────────────────────────────────────────
+app.get('/api/leaderboard', async (req, res) => {
+  // Try DB first, fall back to local data
+  const dbData = await getFromDB(state.affiliateCode || 'default');
 
-// Public leaderboard data
-app.get('/api/leaderboard', (req, res) => {
-  res.json({
-    success: !!state.token,
-    configured: !!state.token,
-    tokenExpired: state.tokenExpired || false,
-    players: state.players || [],
-    totalTurnover: state.totalTurnover || 0,
-    affiliateCode: state.affiliateCode,
-    affiliateName: state.affiliateName,
-    competition: state.competition || DEFAULT_COMPETITION,
-    prizes: state.prizes || DEFAULT_PRIZES,
-    lastSync: state.lastSync,
-    nextSync: state.lastSync ? new Date(new Date(state.lastSync).getTime() + INTERVAL_MS).toISOString() : null,
-  });
+  if (dbData?.players?.length > 0) {
+    const comp = dbData.competition;
+    res.json({
+      success: true,
+      configured: true,
+      players: dbData.players.map(p => ({
+        rank: p.rank,
+        username: p.username,
+        wallet: p.wallet,
+        totalWager: p.total_wager,
+        prize: p.prize,
+      })),
+      totalTurnover: dbData.players.reduce((s, p) => s + (p.total_wager || 0), 0),
+      competition: comp ? {
+        name: comp.name,
+        totalPrize: comp.total_prize,
+        startDate: comp.start_date,
+        endDate: comp.end_date,
+      } : DEFAULT_COMPETITION,
+      prizes: comp?.prizes || DEFAULT_PRIZES,
+      lastSync: comp?.last_sync,
+    });
+  } else {
+    res.json({
+      success: !!state.token,
+      configured: !!state.token,
+      players: state.players || [],
+      totalTurnover: state.totalVolume || 0,
+      competition: state.competition || DEFAULT_COMPETITION,
+      prizes: state.prizes || DEFAULT_PRIZES,
+      lastSync: state.lastSync,
+    });
+  }
 });
 
-// Setup — affiliate pastes their token
 app.post('/api/setup', async (req, res) => {
-  const { token, adminPassword } = req.body;
-
+  const { token, authStore, web3Auth, adminPassword } = req.body;
   if (!token) return res.status(400).json({ error: 'Token required' });
   if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
     return res.status(401).json({ error: 'Wrong admin password' });
   }
-
-  // Validate token
-  const today = new Date().toISOString().split('T')[0];
-  const weekAgo = new Date(Date.now()-7*86400000).toISOString().split('T')[0];
-  const test = await playblockPost(`/v2/sap/dashboard/stats/summary?from=${weekAgo}&to=${today}`, token);
-
-  if (test.status !== 200) {
-    return res.status(400).json({ error: 'Invalid or expired token. Please get a fresh token from your Sharker dashboard.' });
-  }
-
-  const campaigns = test.data?._data?.campaigns || [];
-  if (!campaigns.length) {
-    return res.status(400).json({ error: 'No affiliate campaigns found for this token.' });
-  }
-
   state.token = token;
-  state.tokenExpired = false;
-  state.affiliateCode = campaigns[0].code;
-  state.affiliateName = campaigns[0].title;
-  saveData(state);
-
-  startSyncLoop();
-  res.json({ success: true, affiliateName: campaigns[0].title, campaigns: campaigns.length });
-});
-
-// Refresh token
-app.post('/api/refresh-token', async (req, res) => {
-  const { token, adminPassword } = req.body;
-  if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
-    return res.status(401).json({ error: 'Wrong admin password' });
-  }
-  state.token = token;
+  state.authStore = authStore || null;
+  state.web3Auth = web3Auth || 'auth';
   state.tokenExpired = false;
   saveData(state);
   startSyncLoop();
   res.json({ success: true });
 });
 
-// Manual sync trigger
+app.post('/api/refresh-token', async (req, res) => {
+  const { token, authStore, web3Auth, adminPassword } = req.body;
+  if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
+    return res.status(401).json({ error: 'Wrong admin password' });
+  }
+  state.token = token;
+  state.authStore = authStore || state.authStore;
+  state.web3Auth = web3Auth || state.web3Auth;
+  state.tokenExpired = false;
+  saveData(state);
+  startSyncLoop();
+  res.json({ success: true });
+});
+
 app.post('/api/sync', async (req, res) => {
   const { adminPassword } = req.body;
   if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
     return res.status(401).json({ error: 'Wrong admin password' });
   }
-  res.json({ success: true, message: 'Sync triggered' });
+  res.json({ success: true });
   runSync();
 });
 
-// Update competition settings
 app.post('/api/competition', (req, res) => {
   const { adminPassword, competition } = req.body;
   if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
@@ -286,19 +218,16 @@ app.post('/api/competition', (req, res) => {
   res.json({ success: true });
 });
 
-// Update prizes
 app.post('/api/prizes', (req, res) => {
   const { adminPassword, prizes } = req.body;
   if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
     return res.status(401).json({ error: 'Wrong admin password' });
   }
   state.prizes = prizes;
-  state.players = state.players.map((p, i) => ({ ...p, prize: getPrize(i+1, prizes) }));
   saveData(state);
   res.json({ success: true });
 });
 
-// Admin status
 app.get('/api/admin/status', (req, res) => {
   const pw = req.query.password;
   if (pw !== (process.env.ADMIN_PASSWORD || 'admin123')) {
@@ -306,26 +235,21 @@ app.get('/api/admin/status', (req, res) => {
   }
   res.json({
     configured: !!state.token,
-    tokenExpired: state.tokenExpired,
-    affiliateCode: state.affiliateCode,
-    affiliateName: state.affiliateName,
     playerCount: state.players?.length || 0,
-    totalTurnover: state.totalTurnover,
     lastSync: state.lastSync,
     competition: state.competition,
     prizes: state.prizes,
   });
 });
 
-// ── Start ────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🦈 Sharker Leaderboard → http://localhost:${PORT}`);
-  console.log(`⚙  Admin panel → http://localhost:${PORT}/admin.html`);
+  console.log(`⚙  Admin → http://localhost:${PORT}/admin.html`);
   console.log(`🔧 Setup → http://localhost:${PORT}/setup.html\n`);
   if (state.token) {
-    console.log('[Server] Token found — starting sync...');
+    console.log('[Server] Session found — starting sync...');
     startSyncLoop();
   } else {
-    console.log('[Server] No token set — visit /setup.html to configure');
+    console.log('[Server] No session — visit /setup.html');
   }
 });
