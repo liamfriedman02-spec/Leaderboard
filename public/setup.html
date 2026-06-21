@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#05080f;--card:#0c1220;--border:#1a2540;--border2:#1e2e50;--blue:#1d6ef5;--blue3:#60a5fa;--blue-glow:rgba(29,110,245,0.3);--text:#e2e8f0;--text2:#94a3b8;--text3:#3d5070;--green:#22c55e;--red:#ef4444}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:560px;width:100%}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:580px;width:100%}
 .logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
 .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),var(--blue3));border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff}
 .logo-name{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px}
@@ -35,12 +35,14 @@ h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px}
 .links{display:flex;gap:12px;justify-content:center}
 .link-btn{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:8px 16px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s}
 .link-btn:hover{border-color:var(--blue);color:var(--blue3)}
+.session-data{background:#020509;border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:monospace;font-size:11px;color:#4ade80;margin-top:8px;word-break:break-all;max-height:80px;overflow:hidden;display:none}
+.paste-btn{background:rgba(29,110,245,0.15);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;color:var(--blue3);font-size:12px;cursor:pointer;margin-top:8px;font-family:'Inter',sans-serif}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">
-    <div class="logo-icon">S</div>
+    <div class="logo-icon">🦈</div>
     <div class="logo-name">SHARKER LEADERBOARD</div>
   </div>
 
@@ -55,27 +57,26 @@ h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px}
 
     <div class="step">
       <div class="step-num">Step 2 — Open Developer Console</div>
-      <div class="step-text">Press <strong style="color:#fff">F12</strong> (Windows) or <strong style="color:#fff">Command+Option+J</strong> (Mac) to open DevTools. Click the <strong style="color:#fff">Console</strong> tab.</div>
+      <div class="step-text">Press <strong style="color:#fff">F12</strong> (Windows) or <strong style="color:#fff">Command+Option+J</strong> (Mac). Click the <strong style="color:#fff">Console</strong> tab.</div>
     </div>
 
     <div class="step">
-      <div class="step-num">Step 3 — Copy your token</div>
+      <div class="step-num">Step 3 — Copy your session data</div>
       <div class="step-text">Paste this command in the Console and press Enter:</div>
-      <div class="code-block" onclick="copyCode(this)">
+      <div class="code-block" onclick="copyCode(this)" id="copyCmd">
         <span class="copy-hint">click to copy</span>
-        console.log(localStorage.getItem('auth-token'))
+        copy(JSON.stringify({token:localStorage.getItem('auth-token'),authStore:localStorage.getItem('auth_store'),web3Auth:localStorage.getItem('Web3Auth-cachedAdapter')}))
       </div>
-      <div class="step-text" style="margin-top:8px">Copy the long text that appears below it.</div>
+      <div class="step-text" style="margin-top:8px">This copies your session data to clipboard automatically.</div>
     </div>
 
     <div class="step">
-      <div class="step-num">Step 4 — Paste your token below</div>
-      <div class="step-text">Paste the token you copied into the field below.</div>
+      <div class="step-num">Step 4 — Paste below and connect</div>
+      <div class="step-text">Click the field below and paste (Cmd+V / Ctrl+V):</div>
+      <textarea class="form-input" id="sessionData" rows="2" placeholder='{"token":"eyJ...","authStore":"{...}","web3Auth":"auth"}' style="margin-top:8px;font-family:monospace;font-size:11px" oninput="parseSession()"></textarea>
+      <div id="parsedPreview" class="session-data"></div>
     </div>
   </div>
-
-  <label class="form-label">Your Sharker auth token</label>
-  <textarea class="form-input" id="token" rows="3" placeholder="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
 
   <label class="form-label">Admin password</label>
   <input class="form-input" id="adminPass" type="password" placeholder="Enter admin password"/>
@@ -101,8 +102,23 @@ function copyCode(el) {
   });
 }
 
+function parseSession() {
+  const raw = document.getElementById('sessionData').value.trim();
+  const preview = document.getElementById('parsedPreview');
+  try {
+    const d = JSON.parse(raw);
+    if (d.token && d.authStore) {
+      preview.textContent = '✓ Token: ' + d.token.slice(0,30) + '...\n✓ Auth store found\n✓ Web3Auth: ' + (d.web3Auth || 'auth');
+      preview.style.display = 'block';
+      preview.style.color = '#4ade80';
+    }
+  } catch(e) {
+    preview.style.display = 'none';
+  }
+}
+
 async function setup() {
-  const token = document.getElementById('token').value.trim();
+  const raw = document.getElementById('sessionData').value.trim();
   const adminPass = document.getElementById('adminPass').value.trim();
   const btn = document.getElementById('setupBtn');
   const suc = document.getElementById('successMsg');
@@ -111,7 +127,16 @@ async function setup() {
   suc.style.display = 'none';
   err.style.display = 'none';
 
-  if (!token) { err.textContent = 'Please paste your auth token'; err.style.display = 'block'; return; }
+  let sessionData;
+  try {
+    sessionData = JSON.parse(raw);
+  } catch(e) {
+    err.textContent = 'Invalid session data — make sure you copied the full output from the Console';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (!sessionData.token) { err.textContent = 'Token not found in session data'; err.style.display = 'block'; return; }
   if (!adminPass) { err.textContent = 'Please enter admin password'; err.style.display = 'block'; return; }
 
   btn.disabled = true;
@@ -121,12 +146,17 @@ async function setup() {
     const res = await fetch('/api/setup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, adminPassword: adminPass })
+      body: JSON.stringify({
+        token: sessionData.token,
+        authStore: sessionData.authStore,
+        web3Auth: sessionData.web3Auth || 'auth',
+        adminPassword: adminPass
+      })
     });
     const data = await res.json();
 
     if (data.success) {
-      suc.innerHTML = `✅ Connected! Welcome <strong>${data.affiliateName || 'Affiliate'}</strong> — ${data.campaigns} campaign(s) found.<br><br>Your leaderboard is now live and syncing every 15 minutes.<br><br><a href="/" style="color:var(--blue3)">→ View your leaderboard</a>`;
+      suc.innerHTML = `✅ Connected! Your leaderboard is now live and syncing every 15 minutes.<br><br><a href="/" style="color:var(--blue3)">→ View your leaderboard</a>`;
       suc.style.display = 'block';
       btn.textContent = 'Connected!';
     } else {
