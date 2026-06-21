@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express=require('express'),cors=require('cors'),https=require('https'),path=require('path'),fs=require('fs');
-const app=express(),PORT=process.env.PORT||3001,DATA_FILE=path.join(__dirname,'../data.json'),INTERVAL=15*60*1000;
-app.use(cors());app.use(express.json());app.use(express.static(path.join(__dirname,'../public')));
+const app=express(),PORT=process.env.PORT||3001,DATA_FILE=path.join(__dirname,'data.json'),INTERVAL=15*60*1000;
+app.use(cors());app.use(express.json());app.use(express.static(path.join(__dirname,path.join(__dirname,'..'))));
 const DEFAULT_PRIZES=[{rank:1,prize:'$2,500'},{rank:2,prize:'$1,500'},{rank:3,prize:'$1,000'},{rank:4,prize:'$700'},{rank:5,prize:'$500'},{rank:6,prize:'$325'},{rank:7,prize:'$250'},{rank:8,prize:'$200'},{rank:9,prize:'$150'},{rank:10,prize:'$125'},{rank:11,prize:'$75'},{rank:12,prize:'$75'},{rank:13,prize:'$50'},{rank:14,prize:'$25'},{rank:15,prize:'$25'}];
 const DEFAULT_COMP={name:'Bi-Weekly Wager Race',totalPrize:'$10,000',startDate:new Date().toISOString().split('T')[0],endDate:new Date(Date.now()+14*86400000).toISOString().split('T')[0]};
 function load(){try{if(fs.existsSync(DATA_FILE))return JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));}catch(e){}return{token:null,players:[],totalTurnover:0,lastSync:null,prizes:DEFAULT_PRIZES,competition:DEFAULT_COMP};}
