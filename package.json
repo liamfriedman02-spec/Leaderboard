@@ -1,18 +1,20 @@
 {
-  "name": "sharker-v3",
-  "version": "1.0.0",
-  "description": "",
-  "main": "api/server.js",
+  "name": "sharker-leaderboard",
+  "version": "3.0.0",
+  "description": "Sharker affiliate wager leaderboard",
+  "main": "server.js",
   "scripts": {
-    "start": "node api/server.js"
+    "start": "node server.js",
+    "push": "node pusher.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.3",
+    "puppeteer": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
