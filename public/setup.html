@@ -1,34 +1,147 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Sharker Setup</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;background:#05080f;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.card{background:#0c1220;border:1px solid #1a2540;border-radius:16px;padding:32px;max-width:520px;width:100%}h1{color:#fff;font-size:22px;margin-bottom:8px}.sub{color:#94a3b8;font-size:13px;margin-bottom:24px;line-height:1.6}.step{background:#080f1e;border:1px solid #1e2e50;border-radius:10px;padding:14px;margin-bottom:12px}.sn{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#60a5fa;font-weight:700;margin-bottom:6px}.st{font-size:13px;color:#94a3b8;line-height:1.6}.code{background:#020509;border:1px solid #1e2e50;border-radius:6px;padding:10px;font-family:monospace;font-size:12px;color:#60a5fa;margin-top:8px;cursor:pointer}label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;font-weight:600;margin-bottom:6px;margin-top:14px}input,textarea{width:100%;background:#0a1020;border:1px solid #1e2e50;border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;font-family:sans-serif;outline:none;margin-bottom:4px}button{width:100%;background:linear-gradient(135deg,#1d6ef5,#1558cc);border:none;border-radius:10px;padding:13px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;color:#22c55e;font-size:13px;margin-top:10px;display:none}.er{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px;color:#fca5a5;font-size:13px;margin-top:10px;display:none}.links{text-align:center;margin-top:16px;font-size:13px}a{color:#60a5fa}</style></head>
-<body><div class="card">
-<h1>Connect Sharker Account</h1>
-<p class="sub">Follow these steps to connect your affiliate dashboard and go live in 2 minutes.</p>
-<div class="step"><div class="sn">Step 1 — Go to your Sharker dashboard</div><div class="st">Visit <strong style="color:#fff">sharker.com/sap</strong> and make sure you're logged in.</div></div>
-<div class="step"><div class="sn">Step 2 — Open Console</div><div class="st">Press <strong style="color:#fff">F12</strong> → click <strong style="color:#fff">Console</strong> tab</div></div>
-<div class="step"><div class="sn">Step 3 — Copy your token</div><div class="st">Paste this and press Enter:</div><div class="code" onclick="navigator.clipboard.writeText('console.log(localStorage.getItem(\'auth-token\'))')">console.log(localStorage.getItem('auth-token'))</div><div class="st" style="margin-top:8px">Copy the long text that appears.</div></div>
-<div class="step"><div class="sn">Step 4 — Paste below</div></div>
-<label>Auth Token</label>
-<textarea id="tok" rows="3" placeholder="eyJhbGciOi..."></textarea>
-<label>Admin Password</label>
-<input id="pw" type="password" placeholder="Enter admin password"/>
-<button onclick="setup()">Connect & Go Live</button>
-<div class="ok" id="ok"></div>
-<div class="er" id="er"></div>
-<div class="links"><a href="/">View Leaderboard</a> · <a href="/admin.html">Admin Panel</a></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sharker Leaderboard · Setup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05080f;--card:#0c1220;--border:#1a2540;--border2:#1e2e50;--blue:#1d6ef5;--blue3:#60a5fa;--blue-glow:rgba(29,110,245,0.3);--text:#e2e8f0;--text2:#94a3b8;--text3:#3d5070;--green:#22c55e;--red:#ef4444}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:560px;width:100%}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),var(--blue3));border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff}
+.logo-name{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px}
+h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:8px}
+.subtitle{font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.6}
+.steps{display:flex;flex-direction:column;gap:16px;margin-bottom:28px}
+.step{background:#080f1e;border:1px solid var(--border2);border-radius:12px;padding:16px}
+.step-num{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--blue3);font-weight:700;margin-bottom:6px}
+.step-text{font-size:13px;color:var(--text2);line-height:1.6}
+.code-block{background:#020509;border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:monospace;font-size:12px;color:var(--blue3);margin-top:8px;word-break:break-all;cursor:pointer;transition:border .2s;position:relative}
+.code-block:hover{border-color:var(--blue)}
+.copy-hint{position:absolute;top:8px;right:8px;font-size:10px;color:var(--text3);font-family:'Inter',sans-serif}
+.form-label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);font-weight:600;margin-bottom:6px;display:block}
+.form-input{width:100%;background:#0a1020;border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border .2s;margin-bottom:14px}
+.form-input:focus{border-color:var(--blue)}
+.form-input::placeholder{color:var(--text3)}
+.btn{width:100%;background:linear-gradient(135deg,var(--blue),#1558cc);border:none;border-radius:10px;padding:13px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px var(--blue-glow)}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:14px;color:var(--green);font-size:13px;margin-top:12px;display:none}
+.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:14px;color:#fca5a5;font-size:13px;margin-top:12px;display:none}
+.divider{height:1px;background:var(--border);margin:24px 0}
+.links{display:flex;gap:12px;justify-content:center}
+.link-btn{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:8px 16px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s}
+.link-btn:hover{border-color:var(--blue);color:var(--blue3)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">S</div>
+    <div class="logo-name">SHARKER LEADERBOARD</div>
+  </div>
+
+  <h1>Connect your Sharker account</h1>
+  <p class="subtitle">Follow these steps to connect your affiliate dashboard and go live in 2 minutes.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 1 — Open your Sharker dashboard</div>
+      <div class="step-text">Go to <strong style="color:#fff">sharker.com/sap</strong> and make sure you're logged in.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 2 — Open Developer Console</div>
+      <div class="step-text">Press <strong style="color:#fff">F12</strong> (Windows) or <strong style="color:#fff">Command+Option+J</strong> (Mac) to open DevTools. Click the <strong style="color:#fff">Console</strong> tab.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 3 — Copy your token</div>
+      <div class="step-text">Paste this command in the Console and press Enter:</div>
+      <div class="code-block" onclick="copyCode(this)">
+        <span class="copy-hint">click to copy</span>
+        console.log(localStorage.getItem('auth-token'))
+      </div>
+      <div class="step-text" style="margin-top:8px">Copy the long text that appears below it.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 4 — Paste your token below</div>
+      <div class="step-text">Paste the token you copied into the field below.</div>
+    </div>
+  </div>
+
+  <label class="form-label">Your Sharker auth token</label>
+  <textarea class="form-input" id="token" rows="3" placeholder="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+
+  <label class="form-label">Admin password</label>
+  <input class="form-input" id="adminPass" type="password" placeholder="Enter admin password"/>
+
+  <button class="btn" onclick="setup()" id="setupBtn">Connect & Go Live</button>
+
+  <div class="success" id="successMsg"></div>
+  <div class="error" id="errorMsg"></div>
+
+  <div class="divider"></div>
+  <div class="links">
+    <a class="link-btn" href="/">View Leaderboard</a>
+    <a class="link-btn" href="/admin.html">Admin Panel</a>
+  </div>
 </div>
+
 <script>
-async function setup(){
-  const tok=document.getElementById('tok').value.trim();
-  const pw=document.getElementById('pw').value.trim();
-  document.getElementById('ok').style.display='none';
-  document.getElementById('er').style.display='none';
-  if(!tok){show('er','Paste your token');return;}
-  if(!pw){show('er','Enter admin password');return;}
-  try{
-    const r=await fetch('/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tok,adminPassword:pw})});
-    const d=await r.json();
-    if(d.success){show('ok','Connected! Welcome '+d.affiliateName+' — <a href="/" style="color:#22c55e">View leaderboard →</a>');}
-    else{show('er',d.error||'Setup failed');}
-  }catch(e){show('er','Cannot reach server');}
+function copyCode(el) {
+  const text = el.textContent.replace('click to copy','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    el.querySelector('.copy-hint').textContent = 'copied!';
+    setTimeout(() => el.querySelector('.copy-hint').textContent = 'click to copy', 2000);
+  });
 }
-function show(id,msg){const el=document.getElementById(id);el.innerHTML=msg;el.style.display='block';}
-</script></body></html>
+
+async function setup() {
+  const token = document.getElementById('token').value.trim();
+  const adminPass = document.getElementById('adminPass').value.trim();
+  const btn = document.getElementById('setupBtn');
+  const suc = document.getElementById('successMsg');
+  const err = document.getElementById('errorMsg');
+
+  suc.style.display = 'none';
+  err.style.display = 'none';
+
+  if (!token) { err.textContent = 'Please paste your auth token'; err.style.display = 'block'; return; }
+  if (!adminPass) { err.textContent = 'Please enter admin password'; err.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  try {
+    const res = await fetch('/api/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, adminPassword: adminPass })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      suc.innerHTML = `✅ Connected! Welcome <strong>${data.affiliateName || 'Affiliate'}</strong> — ${data.campaigns} campaign(s) found.<br><br>Your leaderboard is now live and syncing every 15 minutes.<br><br><a href="/" style="color:var(--blue3)">→ View your leaderboard</a>`;
+      suc.style.display = 'block';
+      btn.textContent = 'Connected!';
+    } else {
+      err.textContent = data.error || 'Setup failed';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Connect & Go Live';
+    }
+  } catch(e) {
+    err.textContent = 'Cannot connect to server. Make sure the server is running.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Connect & Go Live';
+  }
+}
+</script>
+</body>
+</html>

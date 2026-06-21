@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sharker · Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05080f;--card:#0c1220;--border:#1a2540;--border2:#1e2e50;--blue:#1d6ef5;--blue3:#60a5fa;--blue-glow:rgba(29,110,245,0.3);--text:#e2e8f0;--text2:#94a3b8;--text3:#3d5070;--green:#22c55e;--red:#ef4444;--gold2:#fbbf24}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 16px 60px}
+.max{max-width:860px;margin:0 auto}
+.page-title{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title{font-size:15px;font-weight:700;color:#fff}
+.card-sub{font-size:12px;color:var(--text3)}
+.card-body{padding:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.stat{background:#080f1e;border-radius:8px;padding:12px;text-align:center}
+.stat-val{font-size:22px;font-weight:800;color:#fff;display:block}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);font-weight:600;margin-bottom:6px;display:block}
+.form-input{width:100%;background:#0a1020;border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border .2s}
+.form-input:focus{border-color:var(--blue)}
+.form-input::placeholder{color:var(--text3)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),#1558cc);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;box-shadow:0 2px 12px var(--blue-glow)}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:rgba(29,110,245,.1);border:1px solid rgba(29,110,245,.2);border-radius:8px;padding:10px 20px;color:var(--blue3);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-secondary:hover{background:rgba(29,110,245,.2)}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 20px;color:#fca5a5;font-weight:700;font-size:13px;cursor:pointer}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:10px 14px;color:var(--green);font-size:12px;margin-top:8px;display:none}
+.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;color:#fca5a5;font-size:12px;margin-top:8px;display:none}
+.status-ok{color:var(--green)}
+.status-err{color:#fca5a5}
+.status-warn{color:var(--gold2)}
+.prize-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.prize-rank{font-size:12px;color:var(--text2);min-width:50px;font-weight:600}
+.prize-input{flex:1;background:#0a1020;border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;outline:none}
+.prize-input:focus{border-color:var(--blue)}
+.login-wrap{max-width:360px;margin:80px auto;text-align:center}
+.login-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:20px}
+textarea.form-input{resize:vertical;min-height:80px}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="max">
+
+<div id="loginSection">
+  <div class="login-wrap">
+    <div class="login-title">Admin Login</div>
+    <div class="form-group">
+      <input class="form-input" id="loginPass" type="password" placeholder="Admin password"/>
+    </div>
+    <button class="btn-primary" style="width:100%" onclick="doLogin()">Login</button>
+    <div class="error" id="loginErr" style="display:none;margin-top:12px">Wrong password</div>
+  </div>
+</div>
+
+<div id="adminSection" style="display:none">
+  <div class="page-title">Admin Panel</div>
+  <div class="page-sub">Manage your Sharker leaderboard · <a href="/" style="color:var(--blue3)">View public leaderboard</a></div>
+
+  <!-- Status -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">System Status</div><div class="card-sub" id="statusSub">Loading...</div></div>
+      <button class="btn-secondary btn-sm" onclick="syncNow()">Sync Now</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat"><span class="stat-val" id="sTurnover">—</span><span class="stat-label">Total Wager</span></div>
+      <div class="stat"><span class="stat-val" id="sPlayers">—</span><span class="stat-label">Players</span></div>
+      <div class="stat"><span class="stat-val" id="sCode" style="font-size:13px;padding-top:4px">—</span><span class="stat-label">Affiliate Code</span></div>
+      <div class="stat"><span class="stat-val" id="sSync" style="font-size:13px;padding-top:4px">—</span><span class="stat-label">Last Sync</span></div>
+    </div>
+    <div class="card-body">
+      <div id="syncMsg"></div>
+    </div>
+  </div>
+
+  <!-- Token Refresh -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Refresh Token</div><div class="card-sub">Update when token expires (~30 days)</div></div>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        When your token expires, go to <strong style="color:#fff">sharker.com/sap</strong> → F12 → Console → run:<br>
+        <code style="background:#080f1e;padding:4px 8px;border-radius:4px;font-size:12px;color:var(--blue3)">console.log(localStorage.getItem('auth-token'))</code><br>
+        Copy the result and paste below.
+      </p>
+      <div class="form-group">
+        <label class="form-label">New token</label>
+        <textarea class="form-input" id="newToken" placeholder="eyJhbGciOi..." rows="3"></textarea>
+      </div>
+      <button class="btn-primary" onclick="refreshToken()">Update Token</button>
+      <div class="success" id="tokenSuccess">Token updated successfully!</div>
+      <div class="error" id="tokenError"></div>
+    </div>
+  </div>
+
+  <!-- Competition Settings -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Competition Settings</div><div class="card-sub">Configure your wager race</div></div>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Competition Name</label>
+          <input class="form-input" id="compName" placeholder="Bi-Weekly Wager Race"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total Prize Pool</label>
+          <input class="form-input" id="compPrize" placeholder="$10,000"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input class="form-input" id="compStart" type="date"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input class="form-input" id="compEnd" type="date"/>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveCompetition()">Save Settings</button>
+      <div class="success" id="compSuccess">Settings saved!</div>
+    </div>
+  </div>
+
+  <!-- Prize Distribution -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Prize Distribution</div><div class="card-sub">Set prizes per rank</div></div>
+    </div>
+    <div class="card-body">
+      <div id="prizeRows"></div>
+      <button class="btn-primary" style="margin-top:12px" onclick="savePrizes()">Save Prizes</button>
+      <div class="success" id="prizeSuccess">Prizes updated!</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+let adminPass = '';
+let statusData = null;
+
+function doLogin() {
+  const pw = document.getElementById('loginPass').value;
+  adminPass = pw;
+  fetch('/api/admin/status?password=' + encodeURIComponent(pw))
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        document.getElementById('loginErr').style.display = 'block';
+        return;
+      }
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('adminSection').style.display = 'block';
+      statusData = d;
+      renderStatus(d);
+      loadCompetition(d);
+      renderPrizes(d.prizes);
+    });
+}
+
+function renderStatus(d) {
+  document.getElementById('sTurnover').textContent = 'G ' + Number(d.totalTurnover || 0).toLocaleString();
+  document.getElementById('sPlayers').textContent = d.playerCount || 0;
+  document.getElementById('sCode').textContent = d.affiliateCode || '—';
+  document.getElementById('sSync').textContent = d.lastSync ? new Date(d.lastSync).toLocaleTimeString() : 'Never';
+  document.getElementById('statusSub').innerHTML = d.tokenExpired
+    ? '<span class="status-err">⚠ Token expired — please refresh</span>'
+    : d.configured
+    ? '<span class="status-ok">✓ Connected and syncing</span>'
+    : '<span class="status-warn">Not configured — go to /setup.html</span>';
+}
+
+function loadCompetition(d) {
+  const c = d.competition || {};
+  document.getElementById('compName').value = c.name || '';
+  document.getElementById('compPrize').value = c.totalPrize || '';
+  document.getElementById('compStart').value = c.startDate || '';
+  document.getElementById('compEnd').value = c.endDate || '';
+}
+
+function renderPrizes(prizes) {
+  const labels = ['🥇 1st','🥈 2nd','🥉 3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th','13th','14th','15th'];
+  const el = document.getElementById('prizeRows');
+  el.innerHTML = (prizes || []).map((p,i) => `
+    <div class="prize-row">
+      <span class="prize-rank">${labels[i] || '#'+(i+1)}</span>
+      <input class="prize-input" data-rank="${p.rank}" value="${p.prize}" placeholder="$0"/>
+    </div>`).join('');
+}
+
+async function syncNow() {
+  const res = await fetch('/api/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword: adminPass}) });
+  const d = await res.json();
+  const el = document.getElementById('syncMsg');
+  el.innerHTML = '<span class="status-ok">✓ Sync triggered — data will update in ~30 seconds</span>';
+  setTimeout(() => el.innerHTML = '', 5000);
+}
+
+async function refreshToken() {
+  const token = document.getElementById('newToken').value.trim();
+  const suc = document.getElementById('tokenSuccess');
+  const err = document.getElementById('tokenError');
+  suc.style.display = 'none'; err.style.display = 'none';
+  if (!token) { err.textContent = 'Paste your new token'; err.style.display = 'block'; return; }
+  const res = await fetch('/api/refresh-token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token, adminPassword: adminPass}) });
+  const d = await res.json();
+  if (d.success) { suc.style.display = 'block'; document.getElementById('newToken').value = ''; }
+  else { err.textContent = d.error; err.style.display = 'block'; }
+}
+
+async function saveCompetition() {
+  const competition = {
+    name: document.getElementById('compName').value,
+    totalPrize: document.getElementById('compPrize').value,
+    startDate: document.getElementById('compStart').value,
+    endDate: document.getElementById('compEnd').value,
+  };
+  await fetch('/api/competition', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({competition, adminPassword: adminPass}) });
+  document.getElementById('compSuccess').style.display = 'block';
+  setTimeout(() => document.getElementById('compSuccess').style.display = 'none', 3000);
+}
+
+async function savePrizes() {
+  const inputs = document.querySelectorAll('.prize-input');
+  const prizes = Array.from(inputs).map((el, i) => ({ rank: i+1, prize: el.value }));
+  await fetch('/api/prizes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prizes, adminPassword: adminPass}) });
+  document.getElementById('prizeSuccess').style.display = 'block';
+  setTimeout(() => document.getElementById('prizeSuccess').style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>

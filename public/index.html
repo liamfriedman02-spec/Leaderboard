@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sharker · Wager Leaderboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05080f;--card:#0c1220;--card2:#101828;--border:#1a2540;--border2:#1e2e50;--blue:#1d6ef5;--blue2:#3b82f6;--blue3:#60a5fa;--blue-glow:rgba(29,110,245,0.3);--gold:#f59e0b;--gold2:#fbbf24;--silver:#94a3b8;--bronze:#b45309;--bronze2:#d97706;--text:#e2e8f0;--text2:#94a3b8;--text3:#3d5070;--green:#22c55e;--red:#ef4444}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+nav{background:#060c18;border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:1px;color:#fff;font-family:'Rajdhani',sans-serif}
+.nav-logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--blue),var(--blue3));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff}
+.nav-right{display:flex;align-items:center;gap:10px}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--green);letter-spacing:.5px}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-text{font-size:11px;color:var(--text3)}
+
+.hero{text-align:center;padding:48px 20px 0;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(29,110,245,.18) 0%,transparent 70%);pointer-events:none}
+.hero-prize{font-family:'Rajdhani',sans-serif;font-size:clamp(64px,12vw,108px);font-weight:700;line-height:1;color:#fff;text-shadow:0 0 60px rgba(29,110,245,.5);letter-spacing:-2px}
+.hero-title{font-family:'Rajdhani',sans-serif;font-size:clamp(22px,5vw,38px);font-weight:700;letter-spacing:3px;color:var(--blue3);text-transform:uppercase;margin-top:4px}
+.hero-sub{font-size:13px;color:var(--text2);margin-top:14px}
+.hero-sub a{color:var(--blue3);font-weight:700;text-decoration:none}
+.rules-btn{margin:14px auto 0;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;background:none;letter-spacing:.5px;transition:all .2s;text-transform:uppercase}
+.rules-btn:hover{border-color:var(--blue);color:var(--blue3)}
+.rules-box{display:none;max-width:560px;margin:12px auto 0;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:16px;text-align:left;font-size:13px;color:var(--text2);line-height:1.7}
+
+.podium-section{padding:36px 16px 0;max-width:680px;margin:0 auto}
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px;align-items:end}
+.pcard{border-radius:16px;padding:20px;position:relative;transition:transform .2s}
+.pcard:hover{transform:translateY(-3px)}
+.rnum{position:absolute;top:-1px;right:-1px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.p1{background:linear-gradient(160deg,#0a1530,#060e1c);border:1px solid rgba(29,110,245,.55);box-shadow:0 0 40px rgba(29,110,245,.2)}
+.p1 .rnum{background:var(--blue);color:#fff}
+.p1 .trophy{width:52px;height:52px;background:rgba(29,110,245,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;border:1px solid rgba(29,110,245,.3)}
+.p1 .pname{font-size:20px;font-weight:800;color:#fff;margin-bottom:12px;word-break:break-all}
+.p1 .wlabel,.p1 .plabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:3px}
+.p1 .wval{font-size:15px;font-weight:700;color:var(--text2);margin-bottom:10px}
+.p1 .pval{font-size:28px;font-weight:800;color:var(--blue3)}
+.p2{background:linear-gradient(160deg,#0e1520,#090e18);border:1px solid #1a2540}
+.p2 .rnum{background:#1a2540;color:var(--silver)}
+.p2 .trophy{width:40px;height:40px;background:rgba(148,163,184,.08);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px;border:1px solid rgba(148,163,184,.15)}
+.p2 .pname{font-size:16px;font-weight:800;color:#fff;margin-bottom:10px;word-break:break-all}
+.p2 .wlabel,.p2 .plabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:2px}
+.p2 .wval{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.p2 .pval{font-size:20px;font-weight:800;color:#fff}
+.p3{background:linear-gradient(160deg,#0f1008,#0a0c06);border:1px solid rgba(180,83,9,.35)}
+.p3 .rnum{background:linear-gradient(135deg,#b45309,#d97706);color:#fff}
+.p3 .trophy{width:40px;height:40px;background:rgba(180,83,9,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px;border:1px solid rgba(180,83,9,.25)}
+.p3 .pname{font-size:16px;font-weight:800;color:#fff;margin-bottom:10px;word-break:break-all}
+.p3 .wlabel,.p3 .plabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600;margin-bottom:2px}
+.p3 .wval{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.p3 .pval{font-size:20px;font-weight:800;color:var(--gold2)}
+
+.cd-wrap{text-align:center;margin:28px 0 0;padding:0 16px}
+.cd-inner{display:inline-flex;align-items:center;gap:4px;background:#080f1e;border:1px solid var(--border2);border-radius:12px;padding:14px 20px}
+.cunit{text-align:center;min-width:52px}
+.cunit-val{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1;display:block}
+.cunit-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-top:2px;font-weight:600}
+.cdot{font-size:28px;font-weight:800;color:var(--blue3);align-self:flex-start;padding-top:4px;line-height:1}
+
+.cta-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px 0 0;flex-wrap:wrap}
+.btn-join{background:linear-gradient(135deg,var(--blue),#1558cc);border:none;border-radius:10px;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 4px 20px var(--blue-glow)}
+.btn-join:hover{transform:translateY(-2px)}
+
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border2) 30%,var(--border2) 70%,transparent);margin:28px 16px 0}
+
+.table-section{max-width:860px;margin:28px auto 0;padding:0 16px}
+.last-updated{font-size:11px;color:var(--text3);text-align:right;margin-bottom:8px}
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.table-head{display:grid;grid-template-columns:80px 1fr 200px 120px;padding:12px 24px;border-bottom:1px solid var(--border)}
+.table-head span{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:600}
+.th-r{text-align:right}
+.trow{display:grid;grid-template-columns:80px 1fr 200px 120px;padding:14px 24px;border-bottom:1px solid rgba(26,37,64,.5);transition:background .15s;align-items:center}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:rgba(29,110,245,.04)}
+.trow-rank{font-size:13px;font-weight:700;color:var(--text3)}
+.trow-player{font-size:14px;font-weight:600;color:#fff;word-break:break-all}
+.trow-wager{font-size:13px;font-weight:600;color:var(--text2);text-align:right;font-variant-numeric:tabular-nums}
+.trow-prize{font-size:13px;font-weight:700;color:var(--blue3);text-align:right}
+.empty-lb{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-lb b{display:block;font-size:18px;color:var(--text2);margin-bottom:8px}
+
+.not-configured{text-align:center;padding:80px 20px;max-width:500px;margin:0 auto}
+.not-configured h2{font-size:24px;font-weight:800;color:#fff;margin-bottom:12px}
+.not-configured p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.btn-setup{background:linear-gradient(135deg,var(--blue),#1558cc);border:none;border-radius:10px;padding:13px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;box-shadow:0 4px 20px var(--blue-glow)}
+
+.prev-wrap{text-align:center;padding:28px 16px 48px}
+.btn-prev{background:linear-gradient(135deg,var(--blue),#1558cc);border:none;border-radius:10px;padding:12px 28px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 4px 20px var(--blue-glow)}
+
+@media(max-width:680px){
+  .podium{grid-template-columns:1fr 1.1fr 1fr;gap:8px}
+  .p1 .pname{font-size:15px}
+  .p1 .pval{font-size:22px}
+  .table-head{grid-template-columns:50px 1fr 120px 80px;padding:10px 14px}
+  .trow{grid-template-columns:50px 1fr 120px 80px;padding:12px 14px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><div class="nav-logo-icon">S</div>&nbsp;SHARKER</div>
+  <div class="nav-right">
+    <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    <span class="sync-text" id="syncText">Loading...</span>
+  </div>
+</nav>
+
+<div id="mainContent" style="display:none">
+  <div class="hero">
+    <div class="hero-prize" id="heroPrize">$10,000</div>
+    <div class="hero-title" id="heroTitle">Bi-Weekly Leaderboard</div>
+    <div class="hero-sub" id="heroSub">Play on Sharker and climb the leaderboard to win prizes</div>
+    <button class="rules-btn" onclick="toggleRules()">Important Rules (Must Read) <span id="rulesArrow">▾</span></button>
+    <div class="rules-box" id="rulesBox">
+      <b style="color:#fff;display:block;margin-bottom:8px">Competition Rules</b>
+      1. Rankings are based on total wager volume during the competition period only.<br>
+      2. Players must sign up via the affiliate link to be eligible.<br>
+      3. Prize payouts processed within 48 hours of competition end.<br>
+      4. Sharker reserves the right to disqualify accounts suspected of abuse.
+    </div>
+  </div>
+
+  <div class="podium-section">
+    <div class="podium" id="podium"></div>
+  </div>
+
+  <div class="cd-wrap">
+    <div class="cd-inner">
+      <div class="cunit"><span class="cunit-val" id="cd-d">--</span><div class="cunit-label">Days</div></div>
+      <div class="cdot">.</div>
+      <div class="cunit"><span class="cunit-val" id="cd-h">--</span><div class="cunit-label">Hrs</div></div>
+      <div class="cdot">.</div>
+      <div class="cunit"><span class="cunit-val" id="cd-m">--</span><div class="cunit-label">Min</div></div>
+      <div class="cdot">.</div>
+      <div class="cunit"><span class="cunit-val" id="cd-s">--</span><div class="cunit-label">Sec</div></div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn-join" id="joinBtn" href="#" target="_blank">⚡ Join Competition</a>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="table-section">
+    <div class="last-updated" id="lastUpdated"></div>
+    <div class="table-wrap">
+      <div class="table-head">
+        <span>Rank</span><span>Player</span>
+        <span class="th-r">Wagered</span>
+        <span class="th-r">Prize</span>
+      </div>
+      <div id="tableBody"></div>
+    </div>
+  </div>
+
+  <div class="sep" style="margin-top:28px"></div>
+  <div class="prev-wrap">
+    <button class="btn-prev">🏆 Previous Leaderboard</button>
+  </div>
+</div>
+
+<div id="notConfigured" style="display:none">
+  <div class="not-configured">
+    <div style="font-size:48px;margin-bottom:16px">🦈</div>
+    <h2>Leaderboard not configured</h2>
+    <p>Connect your Sharker affiliate account to activate the leaderboard and start showing your players' wager data automatically.</p>
+    <a class="btn-setup" href="/setup.html">Connect Sharker Account →</a>
+  </div>
+</div>
+
+<script>
+let competition = null;
+let endDate = null;
+
+function fmtG(n) {
+  if (!n) return 'G 0';
+  if (n >= 1000000) return 'G ' + (n/1000000).toFixed(2) + 'M';
+  if (n >= 1000) return 'G ' + (n/1000).toFixed(1) + 'K';
+  return 'G ' + Number(n).toLocaleString();
+}
+
+function renderPodium(players) {
+  const get = i => players[i] || null;
+  const order = [
+    { p: get(1), cls: 'p2 pcard', t: '🥈', r: 2 },
+    { p: get(0), cls: 'p1 pcard', t: '🥇', r: 1 },
+    { p: get(2), cls: 'p3 pcard', t: '🥉', r: 3 },
+  ];
+  document.getElementById('podium').innerHTML = order.map(({ p, cls, t, r }) => {
+    if (!p) return `<div class="${cls}"><div class="trophy">${t}</div><div class="pname" style="color:var(--text3);font-size:13px">No player yet</div></div>`;
+    return `<div class="${cls}">
+      <div class="rnum">${r}</div>
+      <div class="trophy">${t}</div>
+      <div class="pname">${p.username}</div>
+      <div class="wlabel">Wagered</div>
+      <div class="wval">${fmtG(p.totalWager)}</div>
+      <div class="plabel">Prize</div>
+      <div class="pval">${p.prize || '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable(players) {
+  const rest = players.slice(3);
+  const body = document.getElementById('tableBody');
+  if (!rest.length) {
+    body.innerHTML = `<div class="empty-lb" style="padding:24px;font-size:13px;color:var(--text3)">Top 3 shown above</div>`;
+    return;
+  }
+  body.innerHTML = rest.map(p => `
+    <div class="trow">
+      <div class="trow-rank">#${p.rank}</div>
+      <div class="trow-player">${p.username}</div>
+      <div class="trow-wager">${fmtG(p.totalWager)}</div>
+      <div class="trow-prize">${p.prize || '—'}</div>
+    </div>`).join('');
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/leaderboard');
+    const data = await res.json();
+
+    if (!data.configured) {
+      document.getElementById('notConfigured').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('mainContent').style.display = 'block';
+
+    // Competition info
+    competition = data.competition;
+    document.getElementById('heroPrize').textContent = competition?.totalPrize || '$10,000';
+    document.getElementById('heroTitle').textContent = competition?.name || 'Bi-Weekly Leaderboard';
+
+    if (data.affiliateCode) {
+      const link = `https://sharker.com/?sap=${data.affiliateCode}`;
+      document.getElementById('joinBtn').href = link;
+      document.getElementById('heroSub').innerHTML = `Play via <a href="${link}" target="_blank">your Sharker link</a> and climb the leaderboard`;
+    }
+
+    // End date for countdown
+    if (competition?.endDate) endDate = new Date(competition.endDate + 'T23:59:59');
+
+    // Players
+    const players = data.players || [];
+    if (players.length === 0) {
+      document.getElementById('podium').innerHTML = `
+        <div class="p2 pcard"><div class="trophy">🥈</div><div class="pname" style="color:var(--text3);font-size:13px">No data yet</div></div>
+        <div class="p1 pcard"><div class="trophy">🥇</div><div class="pname" style="color:var(--text3)">Syncing...</div><div class="wlabel" style="margin-top:8px">Data loads every 15 minutes</div></div>
+        <div class="p3 pcard"><div class="trophy">🥉</div><div class="pname" style="color:var(--text3);font-size:13px">No data yet</div></div>`;
+      document.getElementById('tableBody').innerHTML = '<div class="empty-lb"><b>Syncing player data...</b>Check back in a few minutes.</div>';
+    } else {
+      renderPodium(players);
+      renderTable(players);
+    }
+
+    // Sync info
+    if (data.lastSync) {
+      const ago = Math.round((Date.now() - new Date(data.lastSync)) / 60000);
+      document.getElementById('syncText').textContent = `Updated ${ago < 1 ? 'just now' : ago + 'm ago'}`;
+      document.getElementById('lastUpdated').textContent = `${players.length} players · Last synced ${new Date(data.lastSync).toLocaleTimeString()}`;
+    }
+
+    if (data.tokenExpired) {
+      document.getElementById('syncText').textContent = '⚠ Token expired';
+    }
+
+  } catch(e) {
+    console.error('Failed to load data:', e);
+  }
+}
+
+function toggleRules() {
+  const box = document.getElementById('rulesBox');
+  const arrow = document.getElementById('rulesArrow');
+  const open = box.style.display === 'block';
+  box.style.display = open ? 'none' : 'block';
+  arrow.textContent = open ? '▾' : '▴';
+}
+
+function tick() {
+  if (!endDate) return;
+  let diff = Math.max(0, (endDate - new Date()) / 1000) | 0;
+  const d = Math.floor(diff / 86400); diff -= d * 86400;
+  const h = Math.floor(diff / 3600); diff -= h * 3600;
+  const m = Math.floor(diff / 60); const s = diff % 60;
+  document.getElementById('cd-d').textContent = String(d).padStart(2, '0');
+  document.getElementById('cd-h').textContent = String(h).padStart(2, '0');
+  document.getElementById('cd-m').textContent = String(m).padStart(2, '0');
+  document.getElementById('cd-s').textContent = String(s).padStart(2, '0');
+}
+
+loadData();
+setInterval(loadData, 15 * 60 * 1000);
+setInterval(tick, 1000); tick();
+</script>
+</body>
+</html>
