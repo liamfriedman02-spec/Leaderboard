@@ -2,17 +2,15 @@
   "name": "sharker-leaderboard",
   "version": "3.0.0",
   "description": "Sharker affiliate wager leaderboard",
-  "main": "server.js",
+  "main": "api/server.js",
   "scripts": {
-    "start": "node server.js",
-    "push": "node pusher.js"
+    "start": "node api/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "pg": "^8.11.3",
-    "puppeteer": "^22.0.0"
+    "pg": "^8.11.3"
   },
   "engines": {
     "node": ">=18.0.0"
